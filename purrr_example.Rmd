@@ -1,0 +1,70 @@
+---
+title: 'purrr example'
+author: "[Orhan Aktaş](https://www.linkedin.com/in/orhanaktas/)"
+date: "24 Nov 2020"
+output:
+  html_document:
+    theme: flatly
+    df_print: paged
+  pdf_document: default
+  word_document: default
+   
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+Bu dökümanda purrr paketinin kullanılmasını gösteren aynı veri üzerinde yapılmış iki uygulamayı tekrarlıyorum. Uygulamalar aşağıdaki iki linkte bulunuyor.
+
+- [link1](http://zevross.com/blog/2019/06/11/the-power-of-three-purrr-poseful-iteration-in-r-with-map-pmap-and-imap/)
+
+- [link2](https://jennybc.github.io/purrr-tutorial/ex26_ny-food-market-json.html#convert_remaining_variables_into_a_data_frame)
+
+Daha önce bilgisayara download edilmiş json formatında olan veri import ediliyor.
+```{r import_json}
+library(tidyverse)
+library(jsonlite)
+file<-"C:/Users/user/Downloads/foodMarkets/retail_food_markets.json"
+food_mkts_raw <- fromJSON(file,simplifyVector = FALSE)
+```
+
+veriye bir göz atalım. bunu str fonksiyonu ile yapıyoruz. max.level'i 1 ile snırlandırıyoruz ki çok fazla alt seviye varsa devamlı daha altlara inmeyelim.
+```{r data_exploration}
+str(food_mkts_raw, max.level = 1)
+```
+
+meta ve data adlı iki bölümü var. Datayı biraz daha yakın inceleyelim. 28355 kayıt olduğu için list.len kullanarak ilk 5 kayıta bakıyoruz.
+```{r data_exploration2}
+str(food_mkts_raw$data, max.level = 1, list.len = 5)
+```
+
+tamam formatlı bir yapı var. bunu ayrı bir yere alalım. bunun için pluck fonksiyonunu kullanıyorum. 
+```{r get_data}
+food_mkts <- food_mkts_raw %>% pluck("data")
+```
+
+burada pluck fonksiyonunu kullanarak listede seviye seviye daha alt bölümlere gidip column listesinin altında her bir değişkene ait bilgilerden değişken ismi alınıyor.
+```{r get_column_names}
+cnames<-food_mkts_raw %>% 
+  pluck("meta","view","columns") %>%
+  map_chr("name")
+```
+
+Değişken isimleri datanın altında her bir restorana ait verilerin tutulduğu alt bölümlerin adı olarak yazdırılıyor.
+```{r set_names}
+food_mkts <- food_mkts %>% 
+  map(set_names, cnames)
+```
+
+artık verinin her değişkenin doğrudan ulaşılabilir. Örneğin restoran ismine bakalım.
+```{r extract_variable}
+food_mkts %>% map_chr("DBA Name") %>% head %>% str_trim %>% enframe 
+```
+
+
+
